@@ -78,7 +78,7 @@ export default async function SettingsPage() {
       title: "Framework registry",
       body: (
         <div className="space-y-3">
-          {frameworks.map((f) => (
+          {frameworks.map((f: any) => (
             <div key={f.id} className="rounded-lg border border-slate-200 p-3">
               <div className="flex justify-between">
                 <p className="text-sm font-semibold">{f.name}</p>
