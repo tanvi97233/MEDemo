@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build --webpack",
+    "vercel-build": "pnpm approve-builds --all && pnpm run build",
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
