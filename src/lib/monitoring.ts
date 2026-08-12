@@ -22,34 +22,38 @@ export async function recalculateIndicator(indicatorId: string) {
   });
   if (!indicator) return;
   const values = indicator.observations
-    .map((o) => o.numericValue)
+    .map((o: { numericValue: number | null }) => o.numericValue)
     .filter((v): v is number => v !== null);
   if (!values.length) return;
   const numeratorValues = indicator.observations
-    .filter((o) => o.dataField.calculationRole === "NUMERATOR")
-    .map((o) => o.numericValue)
+    .filter((o: { dataField: { calculationRole?: string } }) =>
+      o.dataField.calculationRole === "NUMERATOR",
+    )
+    .map((o: { numericValue: number | null }) => o.numericValue)
     .filter((v): v is number => v !== null);
   const denominatorValues = indicator.observations
-    .filter((o) => o.dataField.calculationRole === "DENOMINATOR")
-    .map((o) => o.numericValue)
+    .filter((o: { dataField: { calculationRole?: string } }) =>
+      o.dataField.calculationRole === "DENOMINATOR",
+    )
+    .map((o: { numericValue: number | null }) => o.numericValue)
     .filter((v): v is number => v !== null);
   let actual: number;
   if (indicator.calculationType === "SUM")
-    actual = values.reduce((a, b) => a + b, 0);
+    actual = values.reduce((a: number, b: number) => a + b, 0);
   else if (indicator.calculationType === "AVERAGE")
-    actual = values.reduce((a, b) => a + b, 0) / values.length;
+    actual = values.reduce((a: number, b: number) => a + b, 0) / values.length;
   else if (indicator.calculationType === "PERCENTAGE") {
     actual =
       denominatorValues.length &&
-      denominatorValues.reduce((a, b) => a + b, 0) > 0
-        ? (numeratorValues.reduce((a, b) => a + b, 0) /
-            denominatorValues.reduce((a, b) => a + b, 0)) *
+      denominatorValues.reduce((a: number, b: number) => a + b, 0) > 0
+        ? (numeratorValues.reduce((a: number, b: number) => a + b, 0) /
+            denominatorValues.reduce((a: number, b: number) => a + b, 0)) *
           100
-        : values.reduce((a, b) => a + b, 0) / values.length;
+        : values.reduce((a: number, b: number) => a + b, 0) / values.length;
   } else
-    actual = new Set(indicator.observations.map((o) => o.submissionId)).size;
+    actual = new Set(indicator.observations.map((o: { submissionId: string }) => o.submissionId)).size;
   const required = indicator.dataFields.filter(
-    (field) => field.required,
+    (field: { required?: boolean }) => field.required,
   ).length;
   const completeness = required
     ? Math.min(
@@ -57,8 +61,9 @@ export async function recalculateIndicator(indicatorId: string) {
         Math.round(
           (values.length /
             (required *
-              new Set(indicator.observations.map((o) => o.submissionId))
-                .size)) *
+              new Set(
+                indicator.observations.map((o: { submissionId: string }) => o.submissionId),
+              ).size)) *
             100,
         ),
       )
