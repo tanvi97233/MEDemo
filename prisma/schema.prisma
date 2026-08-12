@@ -1,0 +1,291 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Organisation {
+  id String @id @default(cuid())
+  name String
+  country String
+  mission String
+  users User[]
+  programmes Programme[]
+  funders Funder[]
+  createdAt DateTime @default(now())
+}
+
+model User {
+  id String @id @default(cuid())
+  name String
+  email String @unique
+  role String
+  passwordHash String @default("")
+  organisationId String
+  organisation Organisation @relation(fields: [organisationId], references: [id])
+  submissions Submission[]
+  sessions Session[]
+}
+
+model Session {
+  id String @id @default(cuid())
+  userId String
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+
+model Programme {
+  id String @id @default(cuid())
+  intakeKey String? @unique
+  organisationId String
+  organisation Organisation @relation(fields: [organisationId], references: [id])
+  name String
+  code String @unique
+  description String
+  problemStatement String
+  geography String
+  targetPopulation String
+  startDate DateTime
+  endDate DateTime
+  budget Float
+  objectives String
+  activities String
+  outputs String
+  outcomes String
+  impact String
+  assumptions String @default("")
+  risks String @default("")
+  partners String
+  status String @default("ACTIVE")
+  reviewStatus String @default("APPROVED")
+  generatorSource String @default("SEED")
+  customFields String @default("{}")
+  grants Grant[]
+  taxonomy ProgrammeTaxonomy[]
+  tocNodes TheoryOfChangeNode[]
+  indicators Indicator[]
+  dataFields DataField[]
+  submissions Submission[]
+  alerts Alert[]
+  reports Report[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Funder {
+  id String @id @default(cuid())
+  organisationId String
+  organisation Organisation @relation(fields: [organisationId], references: [id])
+  name String
+  type String
+  website String
+  primaryContact String
+  contactEmail String
+  notes String
+  grants Grant[]
+  createdAt DateTime @default(now())
+}
+
+model Framework {
+  id String @id @default(cuid())
+  name String @unique
+  description String
+  editable Boolean @default(true)
+  grants Grant[]
+  requirements FrameworkRequirement[]
+}
+
+model FrameworkRequirement {
+  id String @id @default(cuid())
+  frameworkId String
+  framework Framework @relation(fields: [frameworkId], references: [id])
+  code String
+  title String
+  description String
+  indicators Indicator[]
+}
+
+model Grant {
+  id String @id @default(cuid())
+  name String
+  amount Float
+  currency String @default("INR")
+  startDate DateTime
+  endDate DateTime
+  reportingFrequency String
+  nextReportDate DateTime
+  programmeId String
+  programme Programme @relation(fields: [programmeId], references: [id])
+  funderId String
+  funder Funder @relation(fields: [funderId], references: [id])
+  frameworkId String?
+  framework Framework? @relation(fields: [frameworkId], references: [id])
+  requirements String
+  indicators Indicator[]
+  submissions Submission[]
+  alerts Alert[]
+  reports Report[]
+}
+
+model TaxonomyNode {
+  id String @id @default(cuid())
+  name String
+  level String
+  parentId String?
+  parent TaxonomyNode? @relation("TaxonomyTree", fields: [parentId], references: [id])
+  children TaxonomyNode[] @relation("TaxonomyTree")
+  programmes ProgrammeTaxonomy[]
+}
+
+model ProgrammeTaxonomy {
+  programmeId String
+  taxonomyNodeId String
+  confidence Float @default(1)
+  programme Programme @relation(fields: [programmeId], references: [id])
+  taxonomyNode TaxonomyNode @relation(fields: [taxonomyNodeId], references: [id])
+  @@id([programmeId, taxonomyNodeId])
+}
+
+model TheoryOfChangeNode {
+  id String @id @default(cuid())
+  programmeId String
+  programme Programme @relation(fields: [programmeId], references: [id])
+  level String
+  title String
+  description String
+  assumptions String
+  sortOrder Int
+}
+
+model Indicator {
+  id String @id @default(cuid())
+  programmeId String
+  programme Programme @relation(fields: [programmeId], references: [id])
+  grantId String?
+  grant Grant? @relation(fields: [grantId], references: [id])
+  requirementId String?
+  requirement FrameworkRequirement? @relation(fields: [requirementId], references: [id])
+  name String
+  definition String
+  resultLevel String
+  formula String
+  calculationType String @default("COUNT")
+  numerator String?
+  denominator String?
+  unit String
+  baseline Float
+  target Float
+  frequency String
+  dataSource String
+  collectionMethod String
+  responsiblePerson String
+  disaggregation String
+  objective String
+  qualityRules String
+  actual Float @default(0)
+  status String @default("NO_DATA")
+  completeness Float @default(0)
+  reviewStatus String @default("APPROVED")
+  archived Boolean @default(false)
+  lastUpdated DateTime?
+  dataFields DataField[]
+  observations Observation[]
+  alerts Alert[]
+}
+
+model DataField {
+  id String @id @default(cuid())
+  programmeId String
+  programme Programme @relation(fields: [programmeId], references: [id])
+  indicatorId String?
+  indicator Indicator? @relation(fields: [indicatorId], references: [id])
+  key String
+  label String
+  definition String @default("")
+  question String
+  type String
+  unit String @default("")
+  validationRule String @default("")
+  collectionFrequency String @default("Quarterly")
+  calculationRole String @default("SUPPORTING")
+  disaggregation String @default("")
+  dataSource String @default("UniCollector")
+  required Boolean @default(true)
+  options String?
+  observations Observation[]
+  @@unique([programmeId, key])
+}
+
+model Submission {
+  id String @id @default(cuid())
+  submissionKey String? @unique
+  programmeId String
+  programme Programme @relation(fields: [programmeId], references: [id])
+  grantId String?
+  grant Grant? @relation(fields: [grantId], references: [id])
+  submittedById String
+  submittedBy User @relation(fields: [submittedById], references: [id])
+  submittedAt DateTime @default(now())
+  reportingPeriod String
+  location String
+  beneficiaryId String
+  gender String
+  ageGroup String
+  disability String
+  consent Boolean
+  source String @default("UniCollector")
+  validationStatus String @default("VALID")
+  observations Observation[]
+}
+
+model Observation {
+  id String @id @default(cuid())
+  submissionId String
+  submission Submission @relation(fields: [submissionId], references: [id])
+  indicatorId String?
+  indicator Indicator? @relation(fields: [indicatorId], references: [id])
+  dataFieldId String
+  dataField DataField @relation(fields: [dataFieldId], references: [id])
+  numericValue Float?
+  textValue String?
+  date DateTime @default(now())
+}
+
+model Alert {
+  id String @id @default(cuid())
+  programmeId String
+  programme Programme @relation(fields: [programmeId], references: [id])
+  grantId String?
+  grant Grant? @relation(fields: [grantId], references: [id])
+  indicatorId String?
+  indicator Indicator? @relation(fields: [indicatorId], references: [id])
+  type String
+  severity String
+  reason String
+  owner String
+  status String @default("OPEN")
+  triggeredAt DateTime @default(now())
+}
+
+model Report {
+  id String @id @default(cuid())
+  title String
+  programmeId String
+  programme Programme @relation(fields: [programmeId], references: [id])
+  grantId String?
+  grant Grant? @relation(fields: [grantId], references: [id])
+  period String
+  type String
+  comparisonPeriod String @default("None")
+  frameworkName String @default("Standard M&E Report")
+  executiveSummary String
+  achievements String
+  risks String
+  lessons String
+  status String @default("DRAFT")
+  createdAt DateTime @default(now())
+}
